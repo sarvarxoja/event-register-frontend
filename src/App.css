@@ -492,6 +492,10 @@ body {
   color: #15803d;
 }
 
+.form-question--error {
+  color: #dc2626;
+}
+
 .form-options {
   display: grid;
   grid-template-columns: 1fr 1fr;

@@ -11,22 +11,34 @@ function isValidUzPhone(value) {
 export default function RegistrationForm({ t }) {
   const [name, setName] = useState('')
   const [phone, setPhone] = useState('')
-  const [phoneTouched, setPhoneTouched] = useState(false)
   const [attendForum, setAttendForum] = useState(null)
   const [attendDinner, setAttendDinner] = useState(null)
   const [submitted, setSubmitted] = useState(false)
   const [loading, setLoading] = useState(false)
-  const [error, setError] = useState(null)
+  const [serverError, setServerError] = useState(null)
+  const [touched, setTouched] = useState({ name: false, phone: false, forum: false, dinner: false })
 
-  const phoneError = phoneTouched && phone.length > 0 && !isValidUzPhone(phone)
+  const errors = {
+    name: touched.name && !name.trim(),
+    phone: touched.phone && !isValidUzPhone(phone),
+    forum: touched.forum && !attendForum,
+    dinner: touched.dinner && attendForum === 'yes' && !attendDinner,
+  }
 
   const handleSubmit = async (e) => {
     e.preventDefault()
-    setPhoneTouched(true)
-    if (!name.trim() || !isValidUzPhone(phone) || !attendForum) return
+    setTouched({ name: true, phone: true, forum: true, dinner: true })
+
+    const hasError =
+      !name.trim() ||
+      !isValidUzPhone(phone) ||
+      !attendForum ||
+      (attendForum === 'yes' && !attendDinner)
+
+    if (hasError) return
 
     setLoading(true)
-    setError(null)
+    setServerError(null)
 
     try {
       await axios.post('http://localhost:3000/api/register', {
@@ -37,7 +49,7 @@ export default function RegistrationForm({ t }) {
       })
       setSubmitted(true)
     } catch {
-      setError(t.errorMsg ?? "Xatolik yuz berdi. Qayta urinib ko'ring.")
+      setServerError(t.errorMsg ?? "Xatolik yuz berdi. Qayta urinib ko'ring.")
     } finally {
       setLoading(false)
     }
@@ -55,51 +67,48 @@ export default function RegistrationForm({ t }) {
             <div className="form-group">
               <label className="form-label">{t.nameLabel}</label>
               <input
-                className="form-input"
+                className={`form-input ${errors.name ? 'form-input--error' : ''}`}
                 type="text"
                 placeholder={t.namePlaceholder}
                 value={name}
-                onChange={(e) => setName(e.target.value)}
-                required
+                onChange={(e) => { setName(e.target.value); setTouched(p => ({ ...p, name: true })) }}
+                onBlur={() => setTouched(p => ({ ...p, name: true }))}
               />
+              {errors.name && <span className="form-input-error-msg">{t.nameError ?? "Ism majburiy"}</span>}
             </div>
 
             <div className="form-group">
               <label className="form-label">{t.phoneLabel}</label>
               <input
-                className={`form-input ${phoneError ? 'form-input--error' : ''}`}
+                className={`form-input ${errors.phone ? 'form-input--error' : ''}`}
                 type="tel"
                 placeholder={t.phonePlaceholder}
                 value={phone}
-                onChange={(e) => {
-                  setPhone(e.target.value)
-                  setPhoneTouched(true)
-                }}
-                onBlur={() => setPhoneTouched(true)}
+                onChange={(e) => { setPhone(e.target.value); setTouched(p => ({ ...p, phone: true })) }}
+                onBlur={() => setTouched(p => ({ ...p, phone: true }))}
               />
-              {phoneError && (
-                <span className="form-input-error-msg">{t.phoneError}</span>
-              )}
+              {errors.phone && <span className="form-input-error-msg">{t.phoneError}</span>}
             </div>
 
             <div className="form-group">
-              <p className="form-question">{t.q1}</p>
+              <p className={`form-question ${errors.forum ? 'form-question--error' : ''}`}>{t.q1}</p>
               <div className="form-options">
                 <button
                   type="button"
                   className={`option-btn ${attendForum === 'yes' ? 'option-btn--yes-active' : ''}`}
-                  onClick={() => setAttendForum('yes')}
+                  onClick={() => { setAttendForum('yes'); setTouched(p => ({ ...p, forum: true })) }}
                 >
                   ✓ {t.yes}
                 </button>
                 <button
                   type="button"
                   className={`option-btn ${attendForum === 'no' ? 'option-btn--no-active' : ''}`}
-                  onClick={() => { setAttendForum('no'); setAttendDinner(null) }}
+                  onClick={() => { setAttendForum('no'); setAttendDinner(null); setTouched(p => ({ ...p, forum: true })) }}
                 >
                   ✕ {t.no1}
                 </button>
               </div>
+              {errors.forum && <span className="form-input-error-msg">{t.forumError ?? "Javob tanlang"}</span>}
             </div>
 
             {attendForum === 'yes' && (
@@ -109,22 +118,23 @@ export default function RegistrationForm({ t }) {
                   <button
                     type="button"
                     className={`option-btn ${attendDinner === 'yes' ? 'option-btn--yes-active' : ''}`}
-                    onClick={() => setAttendDinner('yes')}
+                    onClick={() => { setAttendDinner('yes'); setTouched(p => ({ ...p, dinner: true })) }}
                   >
                     ✓ {t.yes}
                   </button>
                   <button
                     type="button"
                     className={`option-btn ${attendDinner === 'no' ? 'option-btn--no-active' : ''}`}
-                    onClick={() => setAttendDinner('no')}
+                    onClick={() => { setAttendDinner('no'); setTouched(p => ({ ...p, dinner: true })) }}
                   >
                     ✕ {t.no2}
                   </button>
                 </div>
+                {errors.dinner && <span className="form-input-error-msg">{t.dinnerError ?? "Javob tanlang"}</span>}
               </div>
             )}
 
-            {error && <p className="form-input-error-msg" style={{ marginBottom: 12 }}>{error}</p>}
+            {serverError && <p className="form-input-error-msg" style={{ marginBottom: 12 }}>{serverError}</p>}
 
             <button className="submit-btn" type="submit" disabled={loading}>
               {loading ? '...' : (
