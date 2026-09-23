@@ -41,7 +41,7 @@ export default function RegistrationForm({ t }) {
     setServerError(null)
 
     try {
-      await axios.post('http://localhost:3000/api/register', {
+      await axios.post('https://localhost:3000/api/register', {
         full_name: name.trim(),
         phone: phone.trim(),
         attend_forum: attendForum === 'yes',
